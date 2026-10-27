@@ -38,6 +38,14 @@
 - Similarity test passed: the question "How much did sales increase?" scored 0.716 against the revenue sentence and 0.331 against the unrelated cat sentence.
 - The revenue sentence scored higher, confirming the expected ranking in this small test.
 
+### Step 9 — Vector store and injestion
+
+- Installed ChromaDB successfully.
+- Created analyst/store.py with persistent collection access and batched upsert functionality.
+- Created and ran scripts/test_store.py successfully.
+- Confirmed collection name: reports_bge_small_v1.
+- Initial collection count: 0, as expected before ingestion.
+
 ## Known limitations
 s6:
 - Table values are extracted as text rather than structured rows and columns, so row-to-value associations should be checked during chunking and retrieval.
