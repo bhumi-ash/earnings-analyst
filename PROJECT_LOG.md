@@ -109,3 +109,17 @@ consider improving chunking and retrieval relevance.
 - Tested FY2025 retrieval filter: all results belonged to FY2025.
 - Metadata filtering works correctly across financial years.
 - Retrieval relevance still needs improvement and will be evaluated in Step 15.
+
+### Step 13: Streamlit application
+
+- Installed Streamlit and created the main app.py interface.
+- Added company, financial-year and document-type filters.
+- Added a configurable top-k retrieval slider.
+- Integrated the retrieval and Gemini answer-generation pipelines.
+- Added expandable source passages with PDF viewer page numbers.
+- Successfully launched the app locally at localhost:8501.
+- Tested: "What was the revenue from operations in FY2025?"
+- Retrieved consolidated revenue of ₹1,62,990 crore.
+- Retrieved standalone revenue of ₹1,36,592 crore.
+- Verified both figures against the retrieved annual-report passages.
+- Initial end-to-end Streamlit test passed.
