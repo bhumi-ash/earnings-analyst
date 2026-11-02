@@ -51,3 +51,61 @@ s6:
 - Table values are extracted as text rather than structured rows and columns, so row-to-value associations should be checked during chunking and retrieval.
 s7:
 - Limitation observed: a chunk boundary can fall inside a table heading or table content. Table-aware chunking may be considered in a future improvement; 
+
+### Step 10: Retrieval quality evaluation
+
+Test question: What was the operating margin?
+Filter: INFOSYS, FY2025
+Top 6 retrieved chunks.
+
+Relevant result:
+- Page 75: Contains segmental operating margin figures.
+  Total segmental operating margin was 24.1% in FY2025
+  compared with 23.7% in FY2024.
+
+Partially relevant:
+- Page 30: Contains financial results, revenue, expenses
+  and profit figures, but does not directly state
+  operating margin.
+
+Irrelevant results:
+- Page 241: Revenue recognition accounting policy.
+- Page 292: Operating margin assumptions used for
+  goodwill impairment testing.
+- Page 325: Lease accounting and right-of-use assets.
+- Page 320: Deferred income taxes and revenue
+  recognition accounting policy.
+
+Observation:
+Only one of the six retrieved chunks directly answered
+the question. The retrieval system sometimes matches
+financial terminology without retrieving the exact
+financial metric requested.
+
+Improvement needed: Evaluate retrieval quality and
+consider improving chunking and retrieval relevance.
+
+### Step 11: Grounded answer generation
+
+- Implemented Gemini-based answer generation.
+- Added source formatting and JSON response parsing.
+- Added retry handling for temporary API errors.
+- Tested an answerable question:
+  "What was the revenue in FY2025?"
+  The system returned standalone revenue of ₹1,36,592 crore
+  and consolidated revenue of ₹1,62,990 crore.
+- Tested an unanswerable question:
+  "What is the CEO's favourite food?"
+  The system correctly returned FOUND: False.
+- Both initial end-to-end tests passed.
+
+### Step 12: Multiple document ingestion
+
+- Downloaded and inspected Infosys FY2024 annual report.
+- FY2024 PDF: 352 pages, 3 pages with very little extractable text.
+- Successfully ingested FY2024 report: 1,227 chunks.
+- ChromaDB total: 2,518 chunks.
+- Tested FY2024 retrieval filter: all results belonged to FY2024.
+- Tested FY2025 retrieval filter: all results belonged to FY2025.
+- Metadata filtering works correctly across financial years.
+- Retrieval relevance still needs improvement and will be evaluated in Step 15.
