@@ -22,7 +22,7 @@ def parse_filename(path):
     }
 
 
-def chunk_text(text, max_chars=1200, overlap=150):
+def chunk_text(text, max_chars=2000, overlap=150):
     """Split text into overlapping chunks, preferring to break at
     line/sentence ends."""
     text = re.sub(r"[ \t]+", " ", text).strip()

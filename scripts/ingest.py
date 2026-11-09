@@ -11,6 +11,7 @@ from analyst.store import upsert_chunks
 def ingest(pdf_path):
     pdf_path = Path(pdf_path)
     meta = parse_filename(pdf_path)
+
     pages, _ = remove_repeated_lines(extract_pages(pdf_path))
 
     ids, documents, metadatas = [], [], []
@@ -25,8 +26,30 @@ def ingest(pdf_path):
                 "source": pdf_path.name,
             })
 
-    print(f"{pdf_path.name}: {len(documents)} chunks from {len(pages)} pages")
-    upsert_chunks(ids, documents, embed_passages(documents), metadatas)
+    print(
+        f"{pdf_path.name}: {len(documents)} chunks "
+        f"from {len(pages)} pages"
+    )
+
+    batch_size = 32
+
+    for i in range(0, len(documents), batch_size):
+        j = i + batch_size
+
+        batch_embeddings = embed_passages(documents[i:j])
+
+        upsert_chunks(
+            ids[i:j],
+            documents[i:j],
+            batch_embeddings,
+            metadatas[i:j]
+        )
+
+        print(
+            f"Processed {min(j, len(documents))}/"
+            f"{len(documents)} chunks"
+        )
+
     print("Stored.")
 
 
