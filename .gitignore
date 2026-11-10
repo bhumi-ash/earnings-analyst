@@ -30,3 +30,6 @@ Thumbs.db
 
 # Intermediate metric extraction output
 data/metrics_candidates.json
+
+# Private project notes
+PROJECT_LOG.md
