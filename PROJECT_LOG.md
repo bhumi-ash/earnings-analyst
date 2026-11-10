@@ -260,3 +260,182 @@ Initial recorded comparison:
 - Dynamic BM25 index construction also introduces additional retrieval-time computation as the document collection grows.
 
 **Verification outcome:** Ingestion and BM25 refresh behaviour confirmed by code inspection.
+
+## Step 16: Labelled Answers and Cross-Document Retrieval
+
+### Objective
+Implement two capabilities in the Earnings & Annual Report Analyst:
+1. Separate generated answers into reported facts, management claims, and model interpretation.
+2. Retrieve passages independently from different document types to support comparisons between annual reports and earnings-call transcripts.
+
+### Implementation
+
+**1. Cross-document retrieval — `analyst/retrieval.py`**
+
+- Added `retrieve_multi()` to retrieve passages separately for each requested document type.
+- The function accepts a question, company, financial year, document types, and the number of passages to retrieve per document type.
+- Uses the existing vector retrieval function (`retrieve()`).
+- This approach prevents one document type from dominating retrieval results.
+
+**2. Labelled answer generation — `analyst/generation.py`**
+
+- Added `LABELLED_RULES` to guide the LLM's response structure.
+- Added `answer_labelled()` to generate structured answers containing:
+  - **Reported facts:** Numbers and statements presented as facts in the documents.
+  - **Management claims:** Management explanations, opinions, and outlook.
+  - **Interpretation:** Cautious model-generated inferences based on the retrieved sources.
+- Responses use JSON formatting.
+- Source IDs are mapped to the corresponding document names and page numbers to provide citations.
+- The prompt instructs the model to use only retrieved sources and avoid investment advice.
+
+**3. Streamlit integration — `app.py`**
+
+- Added a checkbox to enable labelled answers.
+- Integrated `answer_labelled()` alongside the existing `answer_question()` function.
+- Added separate display sections for reported facts, management claims, and interpretation.
+- Retained the existing rewritten BM25 retrieval pipeline.
+- Added display of the rewritten search query and cited source passages.
+
+### Testing and Results
+
+**Labelled-answer testing**
+- Successfully launched the Streamlit application.
+- Tested the question: "What reasons did management give for the change in profitability?"
+- The application generated labelled sections and displayed source citations.
+- Verified that the output included a citation to `INFOSYS_FY2025_annual-report.pdf`, page 75.
+- Basic labelled-answer functionality was successfully tested.
+- Further manual verification of generated statements and their classification is required.
+
+**Cross-document retrieval testing**
+
+Tested using:
+
+`retrieve_multi('What was Infosys revenue in FY2025?', company='INFOSYS', fy='FY2025', doc_types=['annual-report', 'earnings-call'], k_each=4)`
+
+Observed results:
+- Total passages retrieved: 4
+- Annual-report passages: 4
+- Earnings-call passages: 0
+
+Database document-type inspection returned:
+
+`Counter({'annual-report': 2518})`
+
+This confirms that the current ChromaDB collection contains 2,518 annual-report chunks and no earnings-call chunks.
+
+The retrieval function executed successfully. Earnings-call retrieval remains pending ingestion of earnings-call transcripts.
+
+### Files Modified
+- `analyst/generation.py`
+- `analyst/retrieval.py`
+- `app.py`
+
+### Limitations and Pending Work
+- Earnings-call transcripts have not yet been ingested.
+- Cross-document comparison between annual reports and earnings calls cannot yet be fully validated.
+- Generated claims and citations require manual verification against the original PDF.
+- Classification of management explanations versus reported facts can be improved through further prompt refinement.
+
+### Step 16 Status
+**Implementation completed; basic functionality tested.**
+
+Cross-document retrieval is implemented, but earnings-call testing is pending transcript ingestion.
+
+The changes are ready for a separate Git commit and push after the Step 16 implementation.
+
+## Step 17: Reliable Financial Comparisons
+
+### Objective
+Implement a reliable financial comparison workflow using the principle:
+
+**LLM proposes → Manual verification → Python calculates.**
+
+The objective is to avoid incorrect financial figures caused by misreading annual-report tables, selecting the wrong financial year, or relying on LLM-generated arithmetic.
+
+### Implementation
+
+**1. Financial metric extraction — `analyst/metrics.py`**
+
+- Created a module to extract financial figures from annual reports.
+- Defined three metrics:
+  - Revenue
+  - Operating profit
+  - Net profit
+- Used Gemini to propose one figure at a time.
+- Retrieved supporting passages using the existing vector retrieval function.
+- Captured the proposed value, unit, financial year, source ID, quotation, PDF page and source filename.
+- Added functions to load verified figures, retrieve individual metric values, calculate growth percentages and calculate profit margins.
+- Added unit consistency and zero-value checks.
+
+**2. Candidate extraction — `scripts/propose_metrics.py`**
+
+- Created a script to extract financial metric candidates for a specified company and multiple financial years.
+- Tested using Infosys FY2024 and FY2025 annual reports.
+- Generated six candidate records covering three metrics across two financial years.
+- Five candidates were successfully extracted initially. FY2024 net profit required manual identification because the model did not return a valid source citation.
+
+**3. Manual verification**
+
+- Manually checked the proposed figures against the original Infosys annual reports.
+- Verified the FY2024 consolidated net profit from the consolidated financial statements.
+- Stored the confirmed figures in `data/metrics_verified.json`.
+- All six figures were recorded in crore, with their corresponding source filenames and PDF viewer page numbers.
+
+**4. Financial comparison — `scripts/compare.py`**
+
+- Created a comparison script to display verified reported figures separately from calculated metrics.
+- Implemented:
+  - Revenue growth percentage
+  - Net profit growth percentage
+  - Operating profit margin
+  - Net profit margin
+- Python performs all calculations using manually verified figures rather than LLM-generated arithmetic.
+
+### Test Results: Infosys FY2024 vs FY2025
+
+**Verified reported figures**
+
+| Metric | FY2024 | FY2025 |
+|---|---:|---:|
+| Revenue (₹ crore) | 153,670 | 162,990 |
+| Operating profit (₹ crore) | 31,747 | 30,880 |
+| Net profit (₹ crore) | 26,248 | 26,713 |
+
+**Calculated metrics**
+
+| Metric | FY2024 | FY2025 |
+|---|---:|---:|
+| Operating margin | 20.7% | 18.9% |
+| Net profit margin | 17.1% | 16.4% |
+
+**Year-on-year growth**
+
+| Metric | Growth |
+|---|---:|
+| Revenue | 6.1% |
+| Net profit | 1.8% |
+
+An independent manual calculation of revenue growth confirmed the Python result:
+
+(162,990 − 153,670) / 153,670 × 100 = 6.06%, approximately 6.1%.
+
+### Observations and Limitations
+
+- Gemini initially failed to extract FY2024 net profit with a valid source citation.
+- The missing figure was identified manually from the consolidated financial statements.
+- FY2025 net profit was returned with a year label of "2025"; the financial year was confirmed against the report.
+- Revenue increased by 6.1%, while net profit increased by 1.8%.
+- Operating and net profit margins declined between the two financial years.
+- These results describe the reported figures and do not independently establish the reasons for changes in profitability.
+- The current verified dataset contains Infosys FY2024 and FY2025 figures only.
+
+### Files Created
+- `analyst/metrics.py`
+- `scripts/propose_metrics.py`
+- `scripts/compare.py`
+- `data/metrics_verified.json` (ignored by Git)
+
+### Step 17 Status
+**Core implementation completed and tested using Infosys FY2024 and FY2025 annual reports.**
+
+Candidate extraction, manual verification, and Python-based financial calculations were successfully demonstrated.
