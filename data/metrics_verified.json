@@ -1,0 +1,57 @@
+
+[
+  {
+    "company": "INFOSYS",
+    "fy": "FY2024",
+    "metric": "revenue",
+    "value": 153670,
+    "unit": "crore",
+    "page": 338,
+    "source": "INFOSYS_FY2024_annual-report.pdf"
+  },
+  {
+    "company": "INFOSYS",
+    "fy": "FY2024",
+    "metric": "operating_profit",
+    "value": 31747,
+    "unit": "crore",
+    "page": 338,
+    "source": "INFOSYS_FY2024_annual-report.pdf"
+  },
+  {
+    "company": "INFOSYS",
+    "fy": "FY2024",
+    "metric": "net_profit",
+    "value": 26248,
+    "unit": "crore",
+    "page": 337,
+    "source": "INFOSYS_FY2024_annual-report.pdf"
+  },
+  {
+    "company": "INFOSYS",
+    "fy": "FY2025",
+    "metric": "revenue",
+    "value": 162990,
+    "unit": "crore",
+    "page": 276,
+    "source": "INFOSYS_FY2025_annual-report.pdf"
+  },
+  {
+    "company": "INFOSYS",
+    "fy": "FY2025",
+    "metric": "operating_profit",
+    "value": 30880,
+    "unit": "crore",
+    "page": 263,
+    "source": "INFOSYS_FY2025_annual-report.pdf"
+  },
+  {
+    "company": "INFOSYS",
+    "fy": "FY2025",
+    "metric": "net_profit",
+    "value": 26713,
+    "unit": "crore",
+    "page": 76,
+    "source": "INFOSYS_FY2025_annual-report.pdf"
+  }
+]

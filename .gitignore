@@ -27,3 +27,6 @@ eval/*results*.xlsx
 .idea/
 .DS_Store
 Thumbs.db
+
+# Intermediate metric extraction output
+data/metrics_candidates.json
