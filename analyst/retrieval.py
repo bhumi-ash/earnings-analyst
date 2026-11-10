@@ -43,3 +43,17 @@ def retrieve(question, k=6, company=None, fy=None, doc_type=None):
         )
 
     return hits
+def retrieve_multi(question, company, fy, doc_types, k_each=4):
+    """Retrieve separately per document type so each type is represented."""
+    hits = []
+
+    for doc_type in doc_types:
+        hits += retrieve(
+            question,
+            k=k_each,
+            company=company,
+            fy=fy,
+            doc_type=doc_type
+        )
+
+    return hits

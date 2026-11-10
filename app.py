@@ -1,7 +1,7 @@
 
 import streamlit as st
 
-from analyst.generation import answer_question
+from analyst.generation import answer_labelled, answer_question
 from analyst.hybrid import retrieve_bm25
 from analyst.query_rewriting import rewrite_query
 from analyst.store import get_collection
@@ -62,6 +62,10 @@ with st.sidebar:
         10
     )
 
+    labelled = st.checkbox(
+        "Labelled answer (facts / management claims / interpretation)"
+    )
+
 
 question = st.text_input(
     "Ask a question about the reports"
@@ -87,22 +91,46 @@ if st.button("Ask") and question.strip():
                 doc_type=None if doc_type == "All" else doc_type,
             )
 
-            # Step 3: Generate an answer using the original question
-            result = answer_question(question, hits)
+            # Step 3: Generate the selected answer format
+            if labelled:
+                result = answer_labelled(question, hits)
+            else:
+                result = answer_question(question, hits)
 
-        # Display the rewritten query for transparency
+        # Display the rewritten query
         with st.expander("View rewritten search query"):
             st.write(rewritten_question)
 
-        if result["found"]:
+        # Display the answer
+        if labelled and result["found"]:
+
+            for title, key in [
+                ("Reported facts", "reported_facts"),
+                ("Management claims", "management_claims"),
+                (
+                    "Interpretation (the model's reading; verify)",
+                    "interpretation"
+                ),
+            ]:
+                st.subheader(title)
+
+                if result[key]:
+                    for item in result[key]:
+                        st.write("- " + item["text"])
+                else:
+                    st.info("No statements in this category.")
+
+        elif result["found"]:
             st.subheader("Answer")
             st.write(result["answer"])
+
         else:
             st.warning(
                 "Not found in the selected documents. "
                 + result["answer"]
             )
 
+        # Display sources
         st.subheader("Sources")
 
         if result["sources"]:

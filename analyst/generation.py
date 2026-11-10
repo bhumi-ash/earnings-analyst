@@ -120,3 +120,102 @@ def answer_question(question, hits):
         "answer": str(data.get("answer", "")),
         "sources": [hits[i - 1] for i in ids],
     }
+LABELLED_RULES = """You are a careful analyst of company reports. Use ONLY
+the numbered sources.
+Reply with JSON only:
+{"found": true or false, "note": "what is missing, if anything",
+  "reported_facts": [{"text": "...", "source_ids": [1]}],
+  "management_claims": [{"text": "...", "source_ids": [2]}],
+  "interpretation": [{"text": "...", "source_ids": [1, 2]}]}
+Definitions:
+- reported_facts: numbers or statements the documents present as facts.
+- management_claims: explanations, opinions or outlook by management. Start
+  with "Management says".
+- interpretation: your own cautious reading. Say it is an inference. Never do
+  arithmetic yourself.
+Do not give investment advice. If sources disagree (for example report vs
+call), say so in interpretation."""
+
+
+def answer_labelled(question, hits):
+    empty = {
+        "found": False,
+        "answer": "",
+        "sources": [],
+        "reported_facts": [],
+        "management_claims": [],
+        "interpretation": [],
+    }
+
+    if not hits:
+        return {**empty, "answer": "No passages were retrieved."}
+
+    prompt = (
+        f"{LABELLED_RULES}\n\nSources:\n{format_context(hits)}"
+        f"\n\nQuestion: {question}"
+    )
+
+    try:
+        data = parse_json(call_llm(prompt))
+
+    except json.JSONDecodeError:
+        return {
+            **empty,
+            "answer": "The model reply could not be read."
+        }
+
+    out = {
+        **empty,
+        "found": bool(data.get("found")),
+        "answer": str(data.get("note", "")),
+    }
+
+    used = set()
+
+    for key in (
+        "reported_facts",
+        "management_claims",
+        "interpretation",
+    ):
+        items = data.get(key, [])
+
+        if not isinstance(items, list):
+            continue
+
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+
+            raw_ids = item.get("source_ids", [])
+
+            if not isinstance(raw_ids, list):
+                raw_ids = []
+
+            ids = sorted({
+                i for i in raw_ids
+                if isinstance(i, int)
+                and not isinstance(i, bool)
+                and 1 <= i <= len(hits)
+            })
+
+            used.update(ids)
+
+            cites = ", ".join(
+                f"{hits[i - 1]['meta']['source']} "
+                f"p.{hits[i - 1]['meta']['page']}"
+                for i in ids
+            )
+
+            text = str(item.get("text", "")).strip()
+
+            if text:
+                citation = f" [{cites}]" if cites else " [No valid source cited]"
+                out[key].append({
+                    "text": text + citation
+                })
+
+    out["sources"] = [
+        hits[i - 1] for i in sorted(used)
+    ]
+
+    return out
