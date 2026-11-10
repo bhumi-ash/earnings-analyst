@@ -439,3 +439,86 @@ An independent manual calculation of revenue growth confirmed the Python result:
 **Core implementation completed and tested using Infosys FY2024 and FY2025 annual reports.**
 
 Candidate extraction, manual verification, and Python-based financial calculations were successfully demonstrated.
+
+## Step 18: Evidence-Based Red-Flag Scan
+
+### Objective
+Develop an automated annual-report screening feature to identify potentially important financial and corporate governance disclosures for further investigation.
+
+The scanner identifies evidence and provides context without automatically treating disclosures as wrongdoing.
+
+### Implementation
+
+**1. Red-flag scanning module — `analyst/redflags.py`**
+
+- Created a disclosure scanner using Gemini and the existing vector retrieval module.
+- Implemented seven screening themes:
+  1. Auditor remarks
+  2. Related-party transactions
+  3. Contingent liabilities and litigation
+  4. Liquidity and debt
+  5. Exceptional items
+  6. Accounting changes
+  7. Leadership changes
+- Increased retrieval depth from 5 to 10 passages per theme.
+- Added structured JSON output containing:
+  - Summary
+  - Reported evidence
+  - Management explanation
+  - Supporting quotation
+  - Source filename and page
+  - Reason for further review
+  - Counterpoint
+  - Assessment category
+- Added basic source-ID validation and wording checks.
+- Introduced assessment categories:
+  - Routine disclosure
+  - Monitor
+  - Requires further investigation
+
+**2. Execution script — `scripts/red_flags.py`**
+
+- Created a command-line script to execute the seven-theme scan.
+- Integrated the improved scanner and structured output.
+- Tested using Infosys FY2025 annual report.
+
+### Testing and Results
+
+**Initial scan**
+- Successfully processed all seven disclosure themes.
+- Identified auditor remarks, related-party transactions, contingent liabilities, liquidity disclosures, accounting policies and leadership changes.
+- Exceptional-item evidence was not initially retrieved.
+
+**Improved scan**
+- Increased retrieval depth to 10 passages per theme.
+- Successfully identified additional disclosures that were missed during the initial scan.
+- Extracted financial amounts and management explanations for relevant themes.
+- Successfully identified exceptional-item-related disclosures.
+
+### Key Findings: Infosys FY2025
+
+| Theme | Observation | Assessment |
+|---|---|---|
+| Auditor remarks | Key Audit Matters identified | Routine disclosure |
+| Related-party transactions | No materially significant potential-conflict transactions reported | Routine disclosure |
+| Contingent liabilities | ₹1,772 crore claims; ₹1,290 crore income-tax claims | Monitor |
+| Liquidity and debt | No outstanding borrowings; ₹47,549 crore consolidated cash and investments | Routine disclosure |
+| Exceptional items | Asset retirements and tax adjustments identified | Routine disclosure |
+| Accounting changes | Consistent accounting policies and no material departures reported | Routine disclosure |
+| Leadership changes | CFO transition and senior-management resignation identified | Routine disclosure |
+
+### Limitations
+- Retrieval is limited to the top 10 passages per theme and may miss relevant disclosures elsewhere in the report.
+- Each finding currently has one primary source citation, even when multiple facts are extracted.
+- Generated findings and quotations require manual verification against the original annual report.
+- No finding should be interpreted as proof of fraud, misconduct or investment risk.
+- The scanner is a screening tool, not a replacement for financial or legal analysis.
+
+### Files Created
+- `analyst/redflags.py`
+- `scripts/red_flags.py`
+
+### Step 18 Status
+**Core implementation completed and tested using Infosys FY2025 annual report.**
+
+The scanner successfully processes seven disclosure themes, extracts supporting evidence and provides contextual assessments for further review.
