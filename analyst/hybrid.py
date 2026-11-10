@@ -3,10 +3,11 @@ from rank_bm25 import BM25Okapi
 
 from analyst.retrieval import retrieve
 from analyst.store import get_collection
+import re
 
 
 def _tokenize(text):
-    return text.lower().split()
+    return re.findall(r"[a-z0-9]+", text.lower())
 
 
 def _get_filtered_documents(company=None, fy=None, doc_type=None):

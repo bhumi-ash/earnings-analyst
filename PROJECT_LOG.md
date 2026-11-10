@@ -123,3 +123,140 @@ consider improving chunking and retrieval relevance.
 - Retrieved standalone revenue of ₹1,36,592 crore.
 - Verified both figures against the retrieved annual-report passages.
 - Initial end-to-end Streamlit test passed.
+
+
+### Step 14 — Evaluation dataset and initial retrieval baseline
+
+- Created an evaluation dataset containing 33 questions:
+  - 28 answerable questions.
+  - 5 unanswerable questions.
+- Established the original vector retrieval baseline on the development evaluation set.
+
+**Initial vector retrieval baseline:**
+- Retrieval hits: 18/28 (64.3%).
+- Correct refusals: 5/5 (100%) in the evaluation comparison.
+- This baseline was used to compare subsequent retrieval improvements.
+
+- Evaluation results were saved to CSV files.
+- The initial baseline showed that retrieval relevance needed improvement before relying on generated answers.
+
+**Manual answer review from the later rewritten-BM25 development run:**
+- Answer correctness: 31/33 (93.9%), provisional.
+- Q15: Revenue growth answer was incomplete because it omitted the FY2024 comparison.
+- Q16: The system incorrectly refused to identify the highest-revenue segment.
+- Citation correctness was not fully audited at this stage, so no overall citation-accuracy score was recorded.
+
+
+
+### Step 15 — Retrieval improvement experiments
+
+The following experiments were conducted using the 33-question development evaluation dataset (28 answerable and 5 unanswerable questions), unless otherwise specified.
+
+**1. Chunk size**
+
+Compared chunk sizes of 800, 1,200 and 2,000 characters.
+
+| Chunk size | Retrieval hit rate |
+|---|---:|
+| 800 | 50.0% |
+| 1,200 | 60.7% |
+| 2,000 | 57.1% |
+
+- Retained 1,200 characters as the chunk size.
+- Overlap: 150 characters.
+
+**2. Top-k**
+
+- Tested retrieval values K = 4, 6 and 10.
+- The application supports configurable top-k retrieval.
+- K = 10 was used for the final development-set end-to-end evaluation.
+
+**3. Metadata filters**
+
+- Implemented company and financial-year filters.
+- Tested filtering across Infosys FY2024 and FY2025 reports.
+- Confirmed that retrieved results respected the selected financial-year filters.
+
+**4. Distance threshold**
+
+- Tested distance-threshold filtering to exclude less relevant retrieval results.
+- No numerical threshold result is recorded in this log.
+
+**5. Prompt improvements**
+
+- Improved query-rewriting rules to preserve company, financial year and reporting context.
+- Updated answer-generation instructions to include the financial year when reporting numerical values.
+- Retained source-grounded answers and refusal behaviour for questions unsupported by retrieved passages.
+
+**6. BM25 and hybrid retrieval**
+
+Compared retrieval methods on the 28 answerable questions in the development evaluation set.
+
+| Retrieval method | Retrieval hits |
+|---|---:|
+| Original vector retrieval | 18/28 (64.3%) |
+| BM25 | 23/28 (82.1%) |
+| Rewritten BM25 | 27/28 (96.4%) |
+| Hybrid retrieval | 26/28 (92.9%) |
+
+- Rewritten BM25 produced the best retrieval result in this comparison.
+- Rewritten BM25 was selected as the final retrieval method for the current MVP.
+- Development-set end-to-end evaluation using rewritten BM25 with K = 10:
+  - Retrieval hit rate: 27/28 (96.4%).
+  - Correct refusals: 5/5 (100%).
+  - Model/API errors: 0.
+- Manual answer review from this run recorded provisional answer correctness of 31/33 (93.9%).
+
+**7. Additional held-out retrieval evaluation**
+
+- A separate held-out dataset contained 25 questions:
+  - 20 answerable questions.
+  - 5 unanswerable questions.
+
+Initial recorded comparison:
+
+| Retrieval method | Hits |
+|---|---:|
+| Rewritten BM25 | 14/20 (70%) |
+| BM25 | 12/20 (60%) |
+| Vector retrieval | 5/20 (25%) |
+
+- The held-out dataset was subsequently used for retrieval debugging and expected-page corrections.
+- In the later recorded rewritten-BM25 run, retrieval hit rate was 15/20 (75%).
+- Manual review of the later held-out run:
+  - Answer correctness: 16/20 (80%).
+  - Citation correctness: 17/20 (85%).
+  - Correct refusals: 5/5 (100%).
+- These later held-out results are diagnostic results, not a pristine final test score, because the dataset was used during debugging.
+- Answer correctness and citation correctness were evaluated separately. An answer can be incorrect while its cited source is still relevant.
+
+**Step 15 conclusion**
+
+- Rewritten BM25 was selected as the current retrieval method based on the development evaluation.
+- Chunk size remains 1,200 characters with 150-character overlap.
+- Company and financial-year metadata filtering is implemented.
+- The optional Gemini embedding-model comparison was skipped because local embeddings were retained to avoid free-tier embedding quota limitations.
+- Development-set and held-out results are reported separately and should not be directly treated as equivalent measurements.
+
+### Step 15 — Document ingestion and BM25 index refresh verification
+
+- Inspected `scripts/ingest.py` and `analyst/store.py`.
+- Confirmed that PDF ingestion extracts text, performs page-level chunking, generates embeddings and stores chunks in the persistent ChromaDB collection.
+- Confirmed that `upsert_chunks()` uses ChromaDB upsert operations.
+- Chunk IDs are generated using the PDF filename, page number and chunk number.
+- Re-ingesting an unchanged PDF updates existing records with matching IDs rather than creating duplicate records.
+
+**BM25 index refresh behaviour:**
+
+- `retrieve_bm25()` fetches the current filtered documents directly from ChromaDB whenever retrieval is performed.
+- The BM25 index is constructed dynamically for each retrieval request.
+- Newly ingested or updated documents are therefore available to subsequent BM25 queries without a separate index-refresh operation.
+- No persistent BM25 index is maintained.
+
+**Known limitation:**
+
+- If document chunking changes, previously stored chunk IDs that are no longer generated may remain in ChromaDB.
+- Document replacement or re-chunking may therefore require explicit cleanup of obsolete records.
+- Dynamic BM25 index construction also introduces additional retrieval-time computation as the document collection grows.
+
+**Verification outcome:** Ingestion and BM25 refresh behaviour confirmed by code inspection.
