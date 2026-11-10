@@ -1,6 +1,10 @@
 
 import streamlit as st
 
+from analyst.logging_setup import setup_logging
+
+setup_logging()
+
 from analyst.generation import answer_labelled, answer_question
 from analyst.hybrid import retrieve_bm25
 from analyst.query_rewriting import rewrite_query

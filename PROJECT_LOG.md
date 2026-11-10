@@ -522,3 +522,25 @@ The scanner identifies evidence and provides context without automatically treat
 **Core implementation completed and tested using Infosys FY2025 annual report.**
 
 The scanner successfully processes seven disclosure themes, extracts supporting evidence and provides contextual assessments for further review.
+
+## Step 19 – Logging and Automated Testing
+
+**Objective:** Improve debugging and verify core project functionality through automated tests.
+
+**Implementation:**
+- Created `analyst/logging_setup.py` for centralized INFO-level logging.
+- Integrated logging into `app.py` and `scripts/red_flags.py`.
+- Installed pytest.
+- Created `tests/test_basics.py` with five automated tests covering:
+  1. Chunk size and overlap constraints.
+  2. Filename metadata parsing.
+  3. Invalid filename rejection.
+  4. Financial growth and margin calculations.
+  5. Unit mismatch rejection.
+- Created `pytest.ini` with `testpaths = tests` to prevent unrelated command-line scripts from being collected.
+
+**Validation:** `python -m pytest -q`
+
+**Result:** 5 passed in 5.55 seconds.
+
+**Status:** Completed.
